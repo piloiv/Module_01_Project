@@ -43,6 +43,7 @@ SKILL_KEYWORDS = [
 ]
 
 SENIORITY_ORDER = ["Entry Level", "Mid Level", "Senior", "Manager & Lead"]
+JOB_EXPLORER_ROW_LIMIT = 1000
 
 
 @st.cache_data(show_spinner="Loading job data...")
@@ -208,7 +209,7 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
             value=(0, max_experience),
         )
 
-    filtered = df.copy()
+    filtered = df
 
     if search_text:
         search_mask = (
@@ -267,7 +268,7 @@ def show_bar_chart(
         )
         .properties(height=320)
     )
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width="stretch")
     st.caption(f"Vertical axis: {y_axis_title}.")
 
 
@@ -429,11 +430,15 @@ def main() -> None:
                 skill_counts.merge(skill_salary, on="skill", how="left").rename(
                     columns={"skill": "Skillset", "job_count": "Job Count", "average_salary": "Median Salary"}
                 ),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
 
     with tab_jobs:
+        st.caption(
+            f"Showing up to {JOB_EXPLORER_ROW_LIMIT:,} roles, sorted by average salary. "
+            "Use the sidebar filters to narrow the job list."
+        )
         display_columns = [
             "title",
             "postedCompany_name",
@@ -448,15 +453,17 @@ def main() -> None:
             "metadata_totalNumberJobApplication",
             "metadata_totalNumberOfView",
         ]
+        display_jobs = filtered[display_columns].nlargest(
+            JOB_EXPLORER_ROW_LIMIT,
+            "average_salary",
+        )
         st.dataframe(
-            filtered[display_columns]
-            .sort_values("average_salary", ascending=False)
-            .rename(columns={
+            display_jobs.rename(columns={
                 "postedCompany_name": "company",
                 "category": "industry_job_category",
                 "role_family": "career_track",
             }),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
